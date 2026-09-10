@@ -61,7 +61,7 @@ jobs:
       # repositories». Шаг включится сам, если репозиторий сделать публичным.
       - name: Аттестация происхождения
         if: github.event.repository.visibility == 'public'
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.build.outputs.digest }}
