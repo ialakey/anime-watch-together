@@ -10,11 +10,14 @@
 AniBoom, Kodik, CVH, Sibnet, Animedia, AniLibria, VK Video, SovetRomantica.
 Вход — через Discord с проверкой членства в гильдии (включается одной настройкой).
 
+![Комната: общий плеер, список зрителей и чат](docs/screenshots/room.jpg)
+
 ---
 
 ## Содержание
 
 - [Возможности](#возможности)
+- [Скриншоты](#скриншоты)
 - [Как это работает](#как-это-работает)
 - [Быстрый старт](#быстрый-старт)
 - [Настройка Discord](#настройка-discord)
@@ -54,6 +57,20 @@ AniBoom, Kodik, CVH, Sibnet, Animedia, AniLibria, VK Video, SovetRomantica.
 - Discord OAuth2 с проверкой членства в гильдии и, опционально, ролей.
 - Проверка тремя способами: токеном пользователя, ботом или без проверки.
 - Выключается одной настройкой — тогда работает гостевой режим (только имя).
+
+---
+
+## Скриншоты
+
+|  |  |
+|---|---|
+| **Главная** — продолжить просмотр и открытые комнаты<br>[![Главная](docs/screenshots/home.jpg)](docs/screenshots/home.jpg) | **Поиск** — выдача каталога с оценками<br>[![Поиск](docs/screenshots/search.jpg)](docs/screenshots/search.jpg) |
+| **Страница тайтла** — серии, озвучки, управление списком<br>[![Страница тайтла](docs/screenshots/anime.jpg)](docs/screenshots/anime.jpg) | **Мой список** — статусы, оценки, прогресс<br>[![Мой список](docs/screenshots/library.jpg)](docs/screenshots/library.jpg) |
+
+Вход при `DISCORD_AUTH_ENABLED=true` — у Discord запрашиваются только имя,
+аватар и подтверждение того, что аккаунт состоит в гильдии:
+
+[![Вход через Discord](docs/screenshots/login-discord.jpg)](docs/screenshots/login-discord.jpg)
 
 ---
 

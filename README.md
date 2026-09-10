@@ -11,11 +11,14 @@ AniBoom, Kodik, CVH, Sibnet, Animedia, AniLibria, VK Video, SovetRomantica.
 Sign-in goes through Discord with a guild membership check — switched on with a
 single setting.
 
+![A room with a shared player, viewer list and chat](docs/screenshots/room.jpg)
+
 ---
 
 ## Contents
 
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [How it works](#how-it-works)
 - [Quick start](#quick-start)
 - [Discord setup](#discord-setup)
@@ -55,6 +58,20 @@ single setting.
 - Discord OAuth2 with a guild membership check and, optionally, role checks.
 - Three ways to verify membership: user token, bot token, or no check at all.
 - Turn it off with one setting and the site runs in guest mode (name only).
+
+---
+
+## Screenshots
+
+|  |  |
+|---|---|
+| **Home** — continue watching and open rooms<br>[![Home](docs/screenshots/home.jpg)](docs/screenshots/home.jpg) | **Search** — catalogue lookup with ratings<br>[![Search](docs/screenshots/search.jpg)](docs/screenshots/search.jpg) |
+| **Title page** — episodes, dubs, list controls<br>[![Title page](docs/screenshots/anime.jpg)](docs/screenshots/anime.jpg) | **My list** — statuses, ratings, progress<br>[![My list](docs/screenshots/library.jpg)](docs/screenshots/library.jpg) |
+
+Sign-in when `DISCORD_AUTH_ENABLED=true` — the site only asks Discord for a name,
+an avatar and confirmation that the account is in the guild:
+
+[![Sign in with Discord](docs/screenshots/login-discord.jpg)](docs/screenshots/login-discord.jpg)
 
 ---
 
