@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block main_class %}container narrow{% endblock %}
+
+{% block content %}
+<div class="card error-card">
+  <p class="error-card__code">{{ status }}</p>
+  <h1 class="error-card__title">{{ title }}</h1>
+  <p class="muted">{{ message }}</p>
+  <div class="error-card__actions">
+    <a class="btn btn--primary" href="/">На главную</a>
+    <a class="btn btn--ghost" href="/search">Найти аниме</a>
+  </div>
+</div>
+{% endblock %}

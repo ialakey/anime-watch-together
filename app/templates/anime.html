@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article class="anime"
+         data-anime-id="{{ anime.id }}"
+         data-anime-source="{{ anime.source }}"
+         data-anime-title="{{ anime.title }}"
+         data-anime-poster="{{ anime.poster or '' }}"
+         data-episode="{{ current_episode }}">
+
+  <header class="anime__head">
+    <div class="anime__poster">
+      {% if anime.poster %}
+        <img src="{{ anime.poster }}" alt="Постер: {{ anime.title }}">
+      {% else %}
+        <div class="poster__stub poster__stub--lg">{{ anime.title[:1] }}</div>
+      {% endif %}
+    </div>
+
+    <div class="anime__info">
+      <h1 class="anime__title">{{ anime.title }}</h1>
+      {% if anime.original_title %}
+        <p class="anime__original">{{ anime.original_title }}</p>
+      {% endif %}
+      <p class="anime__meta">
+        {% if anime.rating %}<span class="chip">★ {{ anime.rating }}</span>{% endif %}
+        <span class="chip">Серий: {{ episodes|length }}</span>
+        <span class="chip">{{ anime.source }}</span>
+        {% if anime.url %}
+          <a class="chip chip--link" href="{{ anime.url }}" target="_blank" rel="noreferrer noopener">Оригинал</a>
+        {% endif %}
+      </p>
+
+      {% if tracking_enabled %}
+        <div class="anime__tracking">
+          <label class="field field--inline">
+            <span class="field__label">В списке</span>
+            <select data-track-status>
+              <option value="">— не добавлено —</option>
+              {% for status in statuses %}
+                <option value="{{ status.value }}"
+                        {% if entry and entry.status == status %}selected{% endif %}>
+                  {{ status.title_ru }}
+                </option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <label class="field field--inline">
+            <span class="field__label">Оценка</span>
+            <select data-track-rating>
+              <option value="">—</option>
+              {% for value in range(10, 0, -1) %}
+                <option value="{{ value }}"
+                        {% if entry and entry.rating == value %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          {% if entry %}
+            <button class="btn btn--ghost btn--sm" data-track-remove>Убрать из списка</button>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <div class="anime__actions">
+        <button class="btn btn--primary btn--lg" data-watch-together>Смотреть вместе</button>
+        <button class="btn btn--ghost btn--lg" data-watch-alone>Смотреть одному</button>
+      </div>
+      <p class="hint" data-watch-hint>
+        Комната создастся с выбранной серией и озвучкой — просто пришлите друзьям ссылку.
+      </p>
+    </div>
+  </header>
+
+  <section class="section">
+    <h2 class="section__title">Серии</h2>
+    <div class="episodes" role="group" aria-label="Список серий">
+      {% for number in episodes %}
+        {% set item = progress.get(number) %}
+        <button class="episode{% if number == current_episode %} episode--active{% endif %}{% if item and item.completed %} episode--watched{% endif %}"
+                data-episode-btn="{{ number }}"
+                title="{% if item and item.completed %}Просмотрено{% elif item %}Просмотрено {{ item.percent }}%{% else %}Ещё не смотрели{% endif %}">
+          <span>{{ number }}</span>
+          {% if item and not item.completed and item.percent %}
+            <i class="episode__bar" style="width: {{ item.percent }}%"></i>
+          {% endif %}
+        </button>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section__title">
+      Озвучка и плеер
+      <span class="chip" data-players-episode>серия {{ current_episode }}</span>
+    </h2>
+    <div class="players" data-players>
+      {% for option in players %}
+        <label class="player-option{% if loop.first %} player-option--active{% endif %}">
+          <input type="radio" name="player" value="{{ option.key }}" {% if loop.first %}checked{% endif %}>
+          <span class="player-option__label">{{ option.label }}</span>
+          <span class="player-option__player">{{ option.player }}</span>
+        </label>
+      {% else %}
+        <p class="muted">Для этой серии не нашлось плееров.</p>
+      {% endfor %}
+    </div>
+  </section>
+</article>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/anime.js" type="module"></script>
+{% endblock %}

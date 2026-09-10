@@ -1,0 +1,43 @@
+name: anime-watch-together
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: anime-watch-together:latest
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # значения из .env имеют приоритет; здесь — разумные умолчания
+      BASE_URL: ${BASE_URL:-http://localhost:8000}
+      SECRET_KEY: ${SECRET_KEY:?Задайте SECRET_KEY в .env — он подписывает сессии и ссылки на видео}
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:////data/anime_watch.db}
+    volumes:
+      - app-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    # комнаты живут в памяти процесса, поэтому воркер ровно один
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --workers
+      - "1"
+      - --proxy-headers
+      - --forwarded-allow-ips
+      - "*"
+
+volumes:
+  app-data:

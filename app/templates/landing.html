@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block main_class %}container landing{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero__text">
+    <h1 class="hero__title">Смотрите аниме <span class="grad">вместе</span></h1>
+    <p class="hero__lead">
+      Создайте комнату, поделитесь ссылкой — и плеер будет идти секунда в секунду
+      у всех сразу. Пауза, перемотка и смена серии видны каждому. А что уже
+      посмотрели, сайт запомнит за вас.
+    </p>
+    <div class="hero__actions">
+      <a class="btn btn--primary btn--lg" href="/login">
+        {% if discord_enabled %}Войти через Discord{% else %}Начать смотреть{% endif %}
+      </a>
+      <a class="btn btn--ghost btn--lg" href="#features">Как это работает</a>
+    </div>
+    {% if discord_enabled %}
+      <p class="hero__note">Доступ открыт участникам Discord-гильдии проекта.</p>
+    {% endif %}
+  </div>
+
+  <div class="hero__art" aria-hidden="true">
+    <div class="mockup">
+      <div class="mockup__bar"><span></span><span></span><span></span></div>
+      <div class="mockup__screen">
+        <div class="mockup__play"></div>
+        <div class="mockup__progress"><i></i></div>
+      </div>
+      <div class="mockup__people">
+        <span class="avatar avatar--letter">А</span>
+        <span class="avatar avatar--letter">К</span>
+        <span class="avatar avatar--letter">М</span>
+        <span class="mockup__count">+2 смотрят</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features" class="features">
+  <article class="feature">
+    <h2>Общий плеер</h2>
+    <p>Управлять могут все или только владелец комнаты — переключается на ходу.
+       Сервер хранит эталонное время и подтягивает тех, кто отстал.</p>
+  </article>
+  <article class="feature">
+    <h2>Поиск и озвучки</h2>
+    <p>Ищите тайтл, выбирайте серию и озвучку. Видео берётся из плееров
+       AniBoom, Kodik, CVH, Sibnet и Animedia через anime-dl-core.</p>
+  </article>
+  <article class="feature">
+    <h2>Трекинг серий</h2>
+    <p>Серия отмечается просмотренной автоматически, а на главной всегда видно,
+       на чём вы остановились.</p>
+  </article>
+  <article class="feature">
+    <h2>Свой чат</h2>
+    <p>Обсуждайте прямо в комнате — без переключения на другое окно.</p>
+  </article>
+</section>
+{% endblock %}

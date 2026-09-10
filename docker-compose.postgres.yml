@@ -1,0 +1,31 @@
+# PostgreSQL вместо SQLite.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d --build
+#
+# DATABASE_URL здесь задаётся явно и перекрывает значение из .env.
+
+services:
+  app:
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-anime}:${POSTGRES_PASSWORD:-anime}@db:5432/${POSTGRES_DB:-anime}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-anime}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-anime}
+      POSTGRES_DB: ${POSTGRES_DB:-anime}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-anime} -d ${POSTGRES_DB:-anime}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:

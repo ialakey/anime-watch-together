@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block body_class %}body--room{% endblock %}
+{% block main_class %}room-layout{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="player-pane">
+  <div class="player-shell">
+    <!-- preload="metadata": с preload="none" Chrome не открывает MediaSource,
+         и hls.js молча не грузит ни одного сегмента -->
+    <video id="player" playsinline controls preload="metadata"
+           poster="{{ room_snapshot.source.poster if room_snapshot.source else '' }}"></video>
+
+    <div class="player-overlay" data-overlay hidden>
+      <div class="player-overlay__box">
+        <p data-overlay-text>Выберите, что смотреть</p>
+        <div class="spinner" data-overlay-spinner hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="player-bar">
+    <div class="player-bar__group">
+      <button class="btn btn--ghost btn--sm" data-episode-prev title="Предыдущая серия">◀ Серия</button>
+      <span class="player-bar__episode" data-episode-label>—</span>
+      <button class="btn btn--ghost btn--sm" data-episode-next title="Следующая серия">Серия ▶</button>
+    </div>
+
+    <div class="player-bar__group">
+      <button class="btn btn--ghost btn--sm" data-skip-intro hidden>Пропустить опенинг</button>
+      <button class="btn btn--ghost btn--sm" data-resync title="Подтянуться к остальным">Синхронизировать</button>
+    </div>
+
+    <div class="player-bar__group player-bar__group--right">
+      <label class="field field--inline field--tight">
+        <span class="field__label">Озвучка</span>
+        <select data-translation-select disabled>
+          <option>—</option>
+        </select>
+      </label>
+      <label class="field field--inline field--tight">
+        <span class="field__label">Качество</span>
+        <select data-quality-select disabled>
+          <option>авто</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div class="player-meta">
+    <h1 class="player-meta__title" data-source-title>{{ room.name }}</h1>
+    <p class="player-meta__sub muted" data-source-sub>
+      {% if room_snapshot.source %}
+        Серия {{ room_snapshot.source.episode }} · {{ room_snapshot.source.translation }}
+      {% else %}
+        Комната создана — выберите аниме
+      {% endif %}
+    </p>
+    <p class="player-meta__actions">
+      <a class="btn btn--ghost btn--sm" href="/search">Выбрать другое аниме</a>
+      {% if room_snapshot.source %}
+        <a class="btn btn--ghost btn--sm"
+           href="/anime/{{ room_snapshot.source.anime_id }}?episode={{ room_snapshot.source.episode }}">
+          Страница тайтла
+        </a>
+      {% endif %}
+    </p>
+  </div>
+</section>
+
+<aside class="side-pane">
+  <header class="side-pane__head">
+    <div>
+      <h2 class="side-pane__title" data-room-name>{{ room.name }}</h2>
+      <p class="muted small">
+        Код комнаты: <code class="code">{{ room.code }}</code>
+      </p>
+    </div>
+    <button class="btn btn--primary btn--sm" data-copy-link data-link="{{ settings.base_url }}/room/{{ room.code }}">
+      Скопировать ссылку
+    </button>
+  </header>
+
+  <section class="side-block">
+    <h3 class="side-block__title">
+      Зрители <span class="chip" data-member-count>{{ room_snapshot.members|length }}</span>
+    </h3>
+    <ul class="members" data-members></ul>
+  </section>
+
+  {% if is_host %}
+  <section class="side-block">
+    <h3 class="side-block__title">Настройки комнаты</h3>
+    <label class="field field--inline">
+      <span class="field__label">Управление плеером</span>
+      <select data-control-mode>
+        <option value="everyone" {% if room.control_mode == 'everyone' %}selected{% endif %}>Все зрители</option>
+        <option value="host" {% if room.control_mode == 'host' %}selected{% endif %}>Только я</option>
+      </select>
+    </label>
+    <label class="switch">
+      <input type="checkbox" data-public-toggle {% if room.is_public %}checked{% endif %}>
+      <span>Показывать комнату на главной</span>
+    </label>
+    <button class="btn btn--danger btn--sm btn--block" data-close-room>Закрыть комнату</button>
+  </section>
+  {% endif %}
+
+  <section class="side-block side-block--chat">
+    <h3 class="side-block__title">Чат</h3>
+    <ol class="chat" data-chat aria-live="polite"></ol>
+    <form class="chat-form" data-chat-form>
+      <input type="text" maxlength="500" placeholder="Написать…" aria-label="Сообщение в чат" autocomplete="off">
+      <button class="btn btn--primary btn--sm" type="submit">→</button>
+    </form>
+  </section>
+</aside>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block scripts %}
+<script id="room-config" type="application/json">{{ client_config|tojson }}</script>
+<script id="room-state" type="application/json">{{ room_snapshot|tojson }}</script>
+<script src="/static/js/room.js" type="module"></script>
+{% endblock %}

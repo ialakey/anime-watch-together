@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>Привет, {{ user.display_name }}</h1>
+    {% if stats and stats.episodes_watched %}
+      <p class="muted">
+        Просмотрено серий: <strong>{{ stats.episodes_watched }}</strong> ·
+        часов: <strong>{{ stats.hours_watched }}</strong> ·
+        тайтлов в списке: <strong>{{ stats.titles }}</strong>
+      </p>
+    {% else %}
+      <p class="muted">Найдите аниме и позовите друзей — ссылка на комнату работает сразу.</p>
+    {% endif %}
+  </div>
+  <div class="page-head__actions">
+    <a class="btn btn--primary" href="/search">Найти аниме</a>
+    <button class="btn btn--ghost" data-create-room>Пустая комната</button>
+  </div>
+</section>
+
+{% if continue_items %}
+<section class="section">
+  <h2 class="section__title">Продолжить просмотр</h2>
+  <div class="grid grid--cards">
+    {% for item in continue_items %}
+      <a class="card poster-card" href="/anime/{{ item.anime_id }}?episode={{ item.episode }}">
+        <div class="poster">
+          {% if item.poster %}
+            <img src="{{ item.poster }}" alt="" loading="lazy">
+          {% else %}
+            <div class="poster__stub">{{ item.title[:1] }}</div>
+          {% endif %}
+          <span class="badge badge--episode">Серия {{ item.episode }}</span>
+          <div class="poster__progress"><i style="width: {{ item.percent }}%"></i></div>
+        </div>
+        <div class="poster-card__body">
+          <h3 class="poster-card__title">{{ item.title }}</h3>
+          <p class="muted small">
+            {{ item.position|duration }}{% if item.duration %} / {{ item.duration|duration }}{% endif %}
+          </p>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if my_rooms %}
+<section class="section">
+  <h2 class="section__title">Ваши комнаты</h2>
+  <div class="grid grid--rooms">
+    {% for room in my_rooms %}{% include "partials/room_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="section">
+  <h2 class="section__title">
+    Открытые комнаты
+    <span class="chip">{{ public_rooms|length }}</span>
+  </h2>
+  {% if public_rooms %}
+    <div class="grid grid--rooms">
+      {% for room in public_rooms %}{% include "partials/room_card.html" %}{% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">
+      <p>Сейчас никто не смотрит. Будьте первым — найдите тайтл и создайте комнату.</p>
+      <a class="btn btn--primary" href="/search">Найти аниме</a>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/home.js" type="module"></script>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>Поиск аниме</h1>
+    <p class="muted">Источник: {{ source }}</p>
+  </div>
+</section>
+
+<form class="search-big" action="/search" method="get" role="search">
+  <input type="search" name="q" value="{{ query }}" maxlength="100" required
+         placeholder="Название на русском или английском" aria-label="Название аниме"
+         {% if not query %}autofocus{% endif %}>
+  <button class="btn btn--primary" type="submit">Искать</button>
+</form>
+
+{% if error %}
+  <div class="alert alert--error" role="alert">{{ error }}</div>
+{% endif %}
+
+{% if query and not error %}
+  {% if results %}
+    <p class="muted small results-count">Нашлось: {{ results|length }}</p>
+    <div class="grid grid--cards">
+      {% for anime in results %}
+        <a class="card poster-card" href="/anime/{{ anime.id }}">
+          <div class="poster">
+            {% if anime.poster %}
+              <img src="{{ anime.poster }}" alt="" loading="lazy">
+            {% else %}
+              <div class="poster__stub">{{ anime.title[:1] }}</div>
+            {% endif %}
+            {% if anime.rating %}<span class="badge badge--rating">★ {{ anime.rating }}</span>{% endif %}
+          </div>
+          <div class="poster-card__body">
+            <h3 class="poster-card__title">{{ anime.title }}</h3>
+            {% if anime.original_title %}
+              <p class="muted small">{{ anime.original_title }}</p>
+            {% endif %}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">
+      <p>По запросу «{{ query }}» ничего не нашлось. Попробуйте другое написание.</p>
+    </div>
+  {% endif %}
+{% elif not query %}
+  <div class="empty">
+    <p>Введите название — и выберите, что смотреть вместе.</p>
+  </div>
+{% endif %}
+{% endblock %}

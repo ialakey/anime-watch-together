@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>Мой список</h1>
+    <p class="muted">
+      Серий просмотрено: <strong>{{ stats.episodes_watched }}</strong> ·
+      часов: <strong>{{ stats.hours_watched }}</strong>
+    </p>
+  </div>
+</section>
+
+<nav class="tabs" aria-label="Фильтр по статусу">
+  <a class="tab{% if not selected %} tab--active{% endif %}" href="/library">
+    Все <span class="chip">{{ counts.all }}</span>
+  </a>
+  {% for status in statuses %}
+    <a class="tab{% if selected == status %} tab--active{% endif %}"
+       href="/library?status={{ status.value }}">
+      {{ status.title_ru }} <span class="chip">{{ counts[status.value] }}</span>
+    </a>
+  {% endfor %}
+</nav>
+
+{% if entries %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Тайтл</th>
+          <th>Статус</th>
+          <th>Серия</th>
+          <th>Оценка</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+          <tr data-entry data-anime-id="{{ entry.anime_id }}" data-anime-source="{{ entry.source }}">
+            <td>
+              <a class="table__title" href="/anime/{{ entry.anime_id }}">
+                {% if entry.poster_url %}
+                  <img src="{{ entry.poster_url }}" alt="" width="40" height="56" loading="lazy">
+                {% else %}
+                  <span class="poster__stub poster__stub--sm">{{ entry.title[:1] }}</span>
+                {% endif %}
+                <span>{{ entry.title }}</span>
+              </a>
+            </td>
+            <td>
+              <select data-track-status class="select--compact">
+                {% for status in statuses %}
+                  <option value="{{ status.value }}" {% if entry.status == status %}selected{% endif %}>
+                    {{ status.title_ru }}
+                  </option>
+                {% endfor %}
+              </select>
+            </td>
+            <td class="nowrap">
+              {{ entry.last_episode }}{% if entry.episodes_total %} / {{ entry.episodes_total }}{% endif %}
+            </td>
+            <td>
+              <select data-track-rating class="select--compact">
+                <option value="">—</option>
+                {% for value in range(10, 0, -1) %}
+                  <option value="{{ value }}" {% if entry.rating == value %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td class="nowrap">
+              <a class="btn btn--ghost btn--sm" href="/anime/{{ entry.anime_id }}?episode={{ entry.last_episode + 1 }}">
+                Продолжить
+              </a>
+              <button class="btn btn--danger btn--sm" data-track-remove>Убрать</button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="empty">
+    <p>Здесь пока пусто. Тайтлы добавляются сами, как только вы что-нибудь посмотрите.</p>
+    <a class="btn btn--primary" href="/search">Найти аниме</a>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/library.js" type="module"></script>
+{% endblock %}

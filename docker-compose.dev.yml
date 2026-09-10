@@ -1,0 +1,24 @@
+# Режим разработки: код монтируется внутрь, uvicorn перезапускается на изменениях.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  app:
+    build:
+      target: runtime
+    environment:
+      DEBUG: "true"
+    volumes:
+      - ./app:/app/app:ro
+      - ./alembic:/app/alembic:ro
+      - app-data:/data
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --reload
+      - --reload-dir
+      - /app/app

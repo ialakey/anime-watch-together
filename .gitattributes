@@ -1,0 +1,7 @@
+# Скрипты, которые запускаются в Linux-контейнере, должны быть с LF —
+# иначе Windows-checkout ломает shebang и entrypoint не стартует.
+*.sh text eol=lf
+docker/* text eol=lf
+Dockerfile text eol=lf
+*.py text eol=lf
+*.yml text eol=lf

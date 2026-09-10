@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block main_class %}container narrow{% endblock %}
+
+{% block content %}
+<div class="card auth-card">
+  <h1 class="auth-card__title">Вход</h1>
+
+  {% if error %}
+    <div class="alert alert--error" role="alert">{{ error }}</div>
+  {% endif %}
+
+  {% if discord_enabled %}
+    <p class="muted">
+      Сайт открыт участникам Discord-гильдии. Мы попросим у Discord только имя,
+      аватар и подтверждение того, что вы состоите на сервере.
+    </p>
+    <a class="btn btn--discord btn--lg btn--block"
+       href="/auth/discord/login?next={{ next|urlencode }}">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M20.3 4.9A19.8 19.8 0 0 0 15.4 3.4l-.2.5c1.6.4 2.9 1 4.1 1.7a13.6 13.6 0 0 0-9-1 14 14 0 0 0-3.5 1A15.8 15.8 0 0 1 11 3.9l-.3-.5c-1.3.2-3.2.7-5 1.5C3.2 8.3 2.4 11.6 2.7 15c1.9 1.4 3.7 2.2 5.5 2.8l1-1.6c-.6-.2-1.2-.5-1.8-.9l.4-.3a11.7 11.7 0 0 0 9.9 0l.4.3c-.6.4-1.2.7-1.8.9l1 1.6c1.8-.6 3.6-1.4 5.5-2.8.4-4-.9-7.3-2.5-10.1M8.9 13.2c-1 0-1.9-.9-1.9-2s.8-2 1.9-2 1.9.9 1.9 2-.8 2-1.9 2m6.2 0c-1 0-1.9-.9-1.9-2s.8-2 1.9-2 1.9.9 1.9 2-.8 2-1.9 2"/></svg>
+      Войти через Discord
+    </a>
+    <p class="hint">
+      Не пускает? Убедитесь, что вы состоите в гильдии, и что при входе разрешили
+      доступ к списку серверов.
+    </p>
+  {% else %}
+    <p class="muted">
+      Авторизация через Discord выключена в конфигурации. Представьтесь — этого
+      достаточно, чтобы вас узнавали в комнатах.
+    </p>
+    <form action="/auth/guest" method="post" class="stack">
+      <label class="field">
+        <span class="field__label">Как вас звать</span>
+        <input type="text" name="display_name" maxlength="32" required autofocus
+               placeholder="Например, Кицунэ" autocomplete="nickname">
+      </label>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn btn--primary btn--lg btn--block">Продолжить</button>
+    </form>
+    <p class="hint">
+      Гостевой профиль привязан к этому браузеру: список и прогресс сохранятся,
+      пока вы не нажмёте «Выйти».
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+<a class="card room-card" href="/room/{{ room.code }}">
+  <div class="room-card__poster">
+    {% if room.poster %}
+      <img src="{{ room.poster }}" alt="" loading="lazy">
+    {% else %}
+      <div class="poster__stub">{{ room.name[:1] }}</div>
+    {% endif %}
+    {% if room.playing %}<span class="badge badge--live">В эфире</span>{% endif %}
+  </div>
+  <div class="room-card__body">
+    <h3 class="room-card__title">{{ room.name }}</h3>
+    {% if room.anime_title %}
+      <p class="room-card__now">{{ room.anime_title }} · серия {{ room.episode }}</p>
+    {% else %}
+      <p class="room-card__now muted">Ещё ничего не выбрали</p>
+    {% endif %}
+    <p class="muted small">
+      {{ room.host_name }} · {{ room.members }}/{{ room.max_members }}
+      {% if room.control_mode == 'host' %} · управляет владелец{% endif %}
+    </p>
+  </div>
+</a>
