@@ -8,7 +8,14 @@ import pytest
 
 from app.auth.session import SessionUser
 from app.config import Settings
-from app.services.rooms import Playback, RoomError, RoomManager, generate_code
+from app.services.rooms import (
+    _CODE_ALPHABET,
+    _CODE_LENGTH,
+    Playback,
+    RoomError,
+    RoomManager,
+    generate_code,
+)
 
 
 def make_user(user_id: int = 1, name: str = "Тестер", admin: bool = False) -> SessionUser:
@@ -53,7 +60,11 @@ def test_seek_keeps_playing_state() -> None:
 
 def test_room_codes_are_unambiguous() -> None:
     codes = {generate_code() for _ in range(200)}
-    assert all(code.isalnum() and code.islower() for code in codes)
+    # проверяем принадлежность алфавиту, а не islower(): код может целиком
+    # состоять из цифр, и тогда islower() вернёт False, хотя код корректный
+    alphabet = set(_CODE_ALPHABET)
+    assert all(set(code) <= alphabet for code in codes)
+    assert all(len(code) == _CODE_LENGTH for code in codes)
     # ни одного символа, который путают на слух и на глаз
     assert not set("".join(codes)) & set("01lio")
 
