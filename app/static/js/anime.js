@@ -2,6 +2,24 @@
 
 import { api, createRoom, toast } from './app.js';
 
+/** Сервер режет имя комнаты на 60 символах (CreateRoomRequest.name). */
+const MAX_ROOM_NAME = 60;
+
+/**
+ * Имя комнаты «Название — серия N».
+ *
+ * Длинные названия обрезаем здесь, иначе сервер отвечает 422: у AnimeGO
+ * русские названия легко перебирают лимит. Хвост с номером серии важнее
+ * конца названия, поэтому режем именно название.
+ */
+function roomName(title, episode) {
+  const suffix = ` — серия ${episode}`;
+  const full = `${title}${suffix}`;
+  if (full.length <= MAX_ROOM_NAME) return full;
+  const keep = Math.max(1, MAX_ROOM_NAME - suffix.length - 1);
+  return `${title.slice(0, keep).trimEnd()}…${suffix}`.slice(0, MAX_ROOM_NAME);
+}
+
 const root = document.querySelector('.anime');
 if (root) init(root);
 
@@ -93,7 +111,7 @@ function init(root) {
     if (hint) hint.textContent = 'Готовим комнату и достаём ссылку на видео…';
     try {
       await createRoom({
-        name: `${state.title} — серия ${state.episode}`,
+        name: roomName(state.title, state.episode),
         is_public: isPublic,
         anime_id: state.animeId,
         episode: state.episode,
