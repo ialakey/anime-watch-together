@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import functools
 import secrets
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 GuildCheckMode = Literal["oauth", "bot", "off"]
 CatalogSourceName = Literal["animego", "animedia"]
@@ -77,11 +77,14 @@ class Settings(BaseSettings):
         ),
     )
     discord_bot_token: str = Field(default="", description="Токен бота для режима проверки bot.")
-    discord_required_role_ids: list[str] = Field(
+    #: NoDecode обязателен: без него pydantic-settings сначала пробует разобрать
+    #: значение как JSON и падает на «1,2» и даже на пустой строке — до валидатора
+    #: ``_parse_id_lists`` дело не доходит. С ним сюда приезжает сырая строка.
+    discord_required_role_ids: Annotated[list[str], NoDecode] = Field(
         default_factory=list,
         description="Если задано — пускать только участников с одной из этих ролей.",
     )
-    discord_admin_ids: list[str] = Field(
+    discord_admin_ids: Annotated[list[str], NoDecode] = Field(
         default_factory=list, description="Discord ID администраторов сайта."
     )
     discord_api_base: str = "https://discord.com/api/v10"
