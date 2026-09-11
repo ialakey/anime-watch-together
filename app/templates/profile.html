@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="profile-head">
+  {% if person.avatar_url %}
+    <img src="{{ person.avatar_url }}" alt="" width="88" height="88" class="avatar avatar--xl">
+  {% else %}
+    <span class="avatar avatar--letter avatar--xl">{{ person.display_name[:1]|upper }}</span>
+  {% endif %}
+  <div>
+    <h1>
+      {{ person.display_name }}
+      {% if person.is_admin %}<span class="chip">админ</span>{% endif %}
+      {% if person.provider == 'guest' %}<span class="chip">гость</span>{% endif %}
+    </h1>
+    <p class="muted">
+      Тайтлов в списке: <strong>{{ stats.titles }}</strong> ·
+      серий просмотрено: <strong>{{ stats.episodes_watched }}</strong> ·
+      часов: <strong>{{ stats.hours_watched }}</strong>
+    </p>
+    {% if is_me %}
+      <p class="hint">Это ваш профиль — таким его видят остальные.
+        <a href="/library">Открыть мой список</a>
+      </p>
+    {% endif %}
+  </div>
+  <div class="profile-head__actions">
+    <a class="btn btn--ghost btn--sm" href="/users">Ко всем участникам</a>
+  </div>
+</section>
+
+{% if recent %}
+<section class="section">
+  <h2 class="section__title">Недавно смотрел</h2>
+  <div class="grid grid--cards">
+    {% for item in recent %}
+      <a class="card poster-card" href="/anime/{{ item.anime_id }}?episode={{ item.episode }}">
+        <div class="poster">
+          {% if item.poster %}
+            <img src="{{ item.poster }}" alt="" loading="lazy">
+          {% else %}
+            <div class="poster__stub">{{ item.title[:1] }}</div>
+          {% endif %}
+          <span class="badge badge--episode">Серия {{ item.episode }}</span>
+          <div class="poster__progress"><i style="width: {{ 100 if item.completed else item.percent }}%"></i></div>
+        </div>
+        <div class="poster-card__body">
+          <h3 class="poster-card__title">{{ item.title }}</h3>
+          <p class="muted small">{% if item.completed %}Досмотрено{% else %}{{ item.percent }}%{% endif %}</p>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="section">
+  <h2 class="section__title">Список аниме</h2>
+
+  <nav class="tabs" aria-label="Фильтр по статусу">
+    <a class="tab{% if not selected %} tab--active{% endif %}" href="/users/{{ person.id }}">
+      Все <span class="chip">{{ counts.all }}</span>
+    </a>
+    {% for status in statuses %}
+      <a class="tab{% if selected == status %} tab--active{% endif %}"
+         href="/users/{{ person.id }}?status={{ status.value }}">
+        {{ status.title_ru }} <span class="chip">{{ counts[status.value] }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  {% if entries %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Тайтл</th>
+            <th>Статус</th>
+            <th>Серия</th>
+            <th>Оценка</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in entries %}
+            <tr>
+              <td>
+                <a class="table__title" href="/anime/{{ entry.anime_id }}">
+                  {% if entry.poster_url %}
+                    <img src="{{ entry.poster_url }}" alt="" width="40" height="56" loading="lazy">
+                  {% else %}
+                    <span class="poster__stub poster__stub--sm">{{ entry.title[:1] }}</span>
+                  {% endif %}
+                  <span>{{ entry.title }}</span>
+                </a>
+              </td>
+              <td class="nowrap">{{ entry.status.title_ru }}</td>
+              <td class="nowrap">
+                {{ entry.last_episode }}{% if entry.episodes_total %} / {{ entry.episodes_total }}{% endif %}
+              </td>
+              <td class="nowrap">{% if entry.rating %}★ {{ entry.rating }}{% else %}—{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty">
+      <p>
+        {% if selected %}
+          В этом статусе пока пусто.
+        {% else %}
+          Список пуст — {{ person.display_name }} ещё ничего не посмотрел здесь.
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

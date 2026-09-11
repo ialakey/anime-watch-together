@@ -156,6 +156,26 @@ function init(root) {
     }
   });
 
+  // --- подписка на новые серии -------------------------------------------
+  const notifyButton = root.querySelector('[data-notify-toggle]');
+  notifyButton?.addEventListener('click', async () => {
+    const subscribed = notifyButton.getAttribute('aria-pressed') === 'true';
+    notifyButton.disabled = true;
+    try {
+      await api('/api/notifications/subscriptions', {
+        method: subscribed ? 'DELETE' : 'POST',
+        body: refPayload(),
+      });
+      notifyButton.setAttribute('aria-pressed', String(!subscribed));
+      notifyButton.textContent = subscribed ? 'Следить за сериями' : 'Не следить за сериями';
+      toast(subscribed ? 'Больше не следим' : 'Напишем в Discord, когда выйдет новая серия', 'ok');
+    } catch (error) {
+      toast(error.message, 'error');
+    } finally {
+      notifyButton.disabled = false;
+    }
+  });
+
   root.querySelector('[data-track-remove]')?.addEventListener('click', async (event) => {
     try {
       await api('/api/tracking/entry', { method: 'DELETE', body: refPayload() });

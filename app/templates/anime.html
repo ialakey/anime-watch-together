@@ -60,6 +60,13 @@
           {% if entry %}
             <button class="btn btn--ghost btn--sm" data-track-remove>Убрать из списка</button>
           {% endif %}
+
+          {% if notifications_enabled %}
+            <button class="btn btn--ghost btn--sm" data-notify-toggle
+                    aria-pressed="{{ 'true' if subscribed else 'false' }}">
+              {% if subscribed %}Не следить за сериями{% else %}Следить за сериями{% endif %}
+            </button>
+          {% endif %}
         </div>
       {% endif %}
 

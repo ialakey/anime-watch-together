@@ -14,7 +14,7 @@ os.environ.setdefault("DISCORD_AUTH_ENABLED", "false")
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.config import Settings
+from app.config import Settings, get_settings
 from app.db import models
 from app.db import session as db_session
 from app.services.catalog import AnimeCard, Catalog, PlayerOption
@@ -108,9 +108,34 @@ def catalog(settings: Settings, fake_source: FakeSource) -> Catalog:
     return Catalog(settings, source=fake_source)
 
 
+class FakeNotifier:
+    """Бот-заглушка: складывает сообщения в список вместо похода в Discord."""
+
+    def __init__(self) -> None:
+        self.sent: list[tuple[object, dict]] = []
+
+    @property
+    def enabled(self) -> bool:
+        return True
+
+    async def send(self, recipient, payload) -> bool:
+        self.sent.append((recipient, payload))
+        return True
+
+    async def aclose(self) -> None:
+        pass
+
+
 @pytest.fixture
-async def client(settings: Settings, catalog: Catalog) -> AsyncIterator[AsyncClient]:
-    """Приложение целиком, но с подменённым каталогом и временной БД."""
+def fake_notifier() -> FakeNotifier:
+    return FakeNotifier()
+
+
+@pytest.fixture
+async def client(
+    settings: Settings, catalog: Catalog, fake_notifier: FakeNotifier
+) -> AsyncIterator[AsyncClient]:
+    """Приложение целиком, но с подменённым каталогом, ботом и временной БД."""
     from app.main import create_app
 
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
@@ -123,12 +148,19 @@ async def client(settings: Settings, catalog: Catalog) -> AsyncIterator[AsyncCli
     app = create_app(settings)
     app.state.catalog = catalog
     app.state.playback.catalog = catalog
+    app.state.notifications.catalog = catalog
+    app.state.notifications.notifier = fake_notifier
+    # ручки берут настройки через зависимость — пусть это будет тот же объект,
+    # что и у сервисов, иначе тесты меняют одни настройки, а код читает другие
+    app.dependency_overrides[get_settings] = lambda: settings
 
     transport = ASGITransport(app=app)
     async with (
         app.router.lifespan_context(app),
         AsyncClient(transport=transport, base_url="http://test") as http,
     ):
+        # тестам иногда нужно само приложение: подменить зависимость, дёрнуть сервис
+        http.app = app
         yield http
 
     await engine.dispose()
@@ -146,8 +178,6 @@ async def auth_client(client: AsyncClient) -> AsyncClient:
 
 @pytest.fixture(autouse=True)
 def _clear_settings_cache() -> Iterator[None]:
-    from app.config import get_settings
-
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()

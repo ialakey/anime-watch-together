@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>Пользователи</h1>
+    <p class="muted">Кто здесь смотрит аниме — и что именно. Нажмите на карточку, чтобы открыть список.</p>
+  </div>
+  <form class="page-head__actions" action="/users" method="get" role="search">
+    <input type="search" name="q" value="{{ query }}" placeholder="Имя участника…"
+           aria-label="Поиск по имени" maxlength="64">
+    <button class="btn btn--ghost" type="submit">Найти</button>
+  </form>
+</section>
+
+{% if people %}
+  <div class="grid grid--people">
+    {% for person in people %}
+      <a class="card person-card" href="/users/{{ person.id }}">
+        {% if person.avatar_url %}
+          <img src="{{ person.avatar_url }}" alt="" width="48" height="48" class="avatar avatar--lg" loading="lazy">
+        {% else %}
+          <span class="avatar avatar--letter avatar--lg">{{ person.initial }}</span>
+        {% endif %}
+        <div class="person-card__body">
+          <h2 class="person-card__name">
+            {{ person.display_name }}
+            {% if person.id == user.id %}<span class="chip">это вы</span>{% endif %}
+            {% if person.is_admin %}<span class="chip">админ</span>{% endif %}
+          </h2>
+          <p class="muted small">
+            Тайтлов: <strong>{{ person.titles }}</strong> ·
+            серий: <strong>{{ person.episodes_watched }}</strong> ·
+            часов: <strong>{{ person.hours_watched }}</strong>
+          </p>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty">
+    <p>
+      {% if query %}
+        По запросу «{{ query }}» никого не нашлось.
+      {% else %}
+        Пока здесь только вы. Позовите друзей — ссылка на комнату работает сразу.
+      {% endif %}
+    </p>
+    {% if query %}<a class="btn btn--ghost" href="/users">Показать всех</a>{% endif %}
+  </div>
+{% endif %}
+{% endblock %}

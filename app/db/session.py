@@ -8,12 +8,15 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from sqlalchemy import MetaData, inspect
+from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.schema import CreateColumn
 
 from app.config import Settings, get_settings
 
@@ -102,9 +105,35 @@ async def dispose_engine() -> None:
 
 async def init_models() -> None:
     """Создаёт таблицы напрямую, без Alembic (используется в тестах и dev-режиме)."""
-    from app.db.models import Base
-
     engine = get_engine()
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_metadata().create_all)
+        await conn.run_sync(_add_missing_columns)
     log.info("Схема БД синхронизирована")
+
+
+def _metadata() -> MetaData:
+    from app.db.models import Base
+
+    return Base.metadata
+
+
+def _add_missing_columns(connection: Connection) -> None:
+    """Догоняет схему уже существующей базы: новые колонки в старых таблицах.
+
+    ``create_all`` создаёт только целиком отсутствующие таблицы, а sqlite-режим
+    живёт без Alembic. Без этого шага обновление приложения ломало бы базу,
+    которая уже есть: первый же SELECT спросил бы колонку, которой нет.
+    """
+    inspector = inspect(connection)
+    existing = set(inspector.get_table_names())
+    for table in _metadata().sorted_tables:
+        if table.name not in existing:
+            continue
+        present = {column["name"] for column in inspector.get_columns(table.name)}
+        for column in table.columns:
+            if column.name in present:
+                continue
+            ddl = CreateColumn(column).compile(connection.engine).string
+            connection.exec_driver_sql(f'ALTER TABLE "{table.name}" ADD COLUMN {ddl}')
+            log.info("Добавлена колонка %s.%s", table.name, column.name)

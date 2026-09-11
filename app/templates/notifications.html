@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>Уведомления</h1>
+    <p class="muted">
+      Бот пишет в Discord, когда у отслеживаемого тайтла выходит новая серия.
+      Список серий сверяется раз в {{ poll_minutes }} мин.
+    </p>
+  </div>
+</section>
+
+<section class="section panel" data-notify-settings>
+  <h2 class="section__title">Куда писать</h2>
+
+  <label class="switch">
+    <input type="checkbox" data-notify-enabled {% if me.notifications_enabled %}checked{% endif %}>
+    <span>Получать уведомления о новых сериях</span>
+  </label>
+
+  <label class="field">
+    <span class="field__label">ID канала Discord (необязательно)</span>
+    <input type="text" inputmode="numeric" maxlength="32" data-notify-channel
+           value="{{ me.notify_channel_id or '' }}"
+           placeholder="{{ default_channel or 'пусто — бот напишет в личные сообщения' }}">
+  </label>
+  <p class="hint">
+    Оставьте пустым, чтобы получать личные сообщения от бота. Чтобы они дошли,
+    бот должен быть на общем сервере, а в настройках приватности Discord должны быть
+    разрешены сообщения от участников сервера.
+  </p>
+
+  {% if me.provider == 'guest' and not me.notify_channel_id and not default_channel %}
+    <p class="alert alert--error">
+      Вы вошли как гость — личных сообщений в Discord у такого аккаунта нет.
+      Укажите ID канала или войдите через Discord.
+    </p>
+  {% endif %}
+
+  <div class="page-head__actions">
+    <button class="btn btn--ghost btn--sm" data-notify-test>Отправить проверочное сообщение</button>
+    {% if user.is_admin %}
+      <button class="btn btn--ghost btn--sm" data-notify-check>Проверить новые серии сейчас</button>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section__title">
+    Отслеживаемые тайтлы
+    <span class="chip">{{ subscriptions|length }}</span>
+  </h2>
+
+  {% if candidates %}
+    <form class="inline-form" data-subscribe-form>
+      <label class="field field--inline">
+        <span class="field__label">Добавить из моего списка</span>
+        <select data-subscribe-pick>
+          {% for entry in candidates %}
+            <option value="{{ entry.anime_id }}"
+                    data-source="{{ entry.source }}"
+                    data-title="{{ entry.title }}"
+                    data-poster="{{ entry.poster_url or '' }}">{{ entry.title }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn btn--primary btn--sm" type="submit">Следить</button>
+    </form>
+  {% endif %}
+
+  {% if subscriptions %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Тайтл</th>
+            <th>Последняя серия</th>
+            <th>Последнее уведомление</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in subscriptions %}
+            <tr data-subscription
+                data-anime-id="{{ item.anime_id }}"
+                data-anime-source="{{ item.source }}">
+              <td>
+                <a class="table__title" href="/anime/{{ item.anime_id }}">
+                  {% if item.poster_url %}
+                    <img src="{{ item.poster_url }}" alt="" width="40" height="56" loading="lazy">
+                  {% else %}
+                    <span class="poster__stub poster__stub--sm">{{ item.title[:1] }}</span>
+                  {% endif %}
+                  <span>{{ item.title }}</span>
+                </a>
+              </td>
+              <td class="nowrap">
+                {% if item.last_known_episode %}{{ item.last_known_episode }}{% else %}—{% endif %}
+              </td>
+              <td class="nowrap muted">
+                {% if item.last_notified_at %}
+                  {{ item.last_notified_at.strftime('%d.%m.%Y %H:%M') }}
+                {% else %}
+                  ещё не было
+                {% endif %}
+              </td>
+              <td class="nowrap">
+                <button class="btn btn--danger btn--sm" data-unsubscribe>Не следить</button>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty">
+      <p>Вы пока ни за чем не следите. Добавьте тайтл отсюда или кнопкой «Следить за сериями» на его странице.</p>
+      <a class="btn btn--primary" href="/search">Найти аниме</a>
+    </div>
+  {% endif %}
+</section>
+
+{% if user.is_admin %}
+<section class="section" data-broadcast>
+  <h2 class="section__title">Рассылка <span class="chip">админ</span></h2>
+  <p class="muted">
+    Выберите тайтл и участников — и подпишите их разом. Отписать можно той же формой.
+  </p>
+
+  {% if known_titles %}
+    <form class="inline-form" data-broadcast-form>
+      <label class="field field--inline">
+        <span class="field__label">Тайтл</span>
+        <select data-broadcast-title>
+          {% for item in known_titles %}
+            <option value="{{ item.anime_id }}"
+                    data-source="{{ item.source }}"
+                    data-title="{{ item.title }}"
+                    data-poster="{{ item.poster or '' }}">{{ item.title }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn btn--primary btn--sm" type="submit" data-broadcast-subscribe>Подписать выбранных</button>
+      <button class="btn btn--ghost btn--sm" type="button" data-broadcast-unsubscribe>Отписать выбранных</button>
+    </form>
+  {% else %}
+    <p class="muted">Пока никто ничего не добавил в список — подписывать не на что.</p>
+  {% endif %}
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th><input type="checkbox" data-broadcast-all aria-label="Выбрать всех"></th>
+          <th>Участник</th>
+          <th>Отслеживает</th>
+          <th>Уведомления</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for person in people %}
+          <tr data-person data-user-id="{{ person.id }}">
+            <td><input type="checkbox" data-broadcast-pick aria-label="Выбрать {{ person.display_name }}"></td>
+            <td>
+              <a class="table__title" href="/users/{{ person.id }}">
+                {% if person.avatar_url %}
+                  <img src="{{ person.avatar_url }}" alt="" width="32" height="32" class="avatar">
+                {% else %}
+                  <span class="avatar avatar--letter">{{ person.initial }}</span>
+                {% endif %}
+                <span>{{ person.display_name }}</span>
+              </a>
+            </td>
+            <td class="nowrap">{{ counts.get(person.id, 0) }}</td>
+            <td class="nowrap">
+              <label class="switch">
+                <input type="checkbox" data-person-enabled
+                       {% if person.notifications_enabled %}checked{% endif %}>
+                <span class="muted small">включены</span>
+              </label>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/notifications.js" type="module"></script>
+{% endblock %}
