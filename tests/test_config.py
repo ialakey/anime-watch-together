@@ -76,6 +76,30 @@ def test_id_lists_are_parsed_from_csv() -> None:
     assert settings.discord_admin_ids == ["1", "2", "3"]
 
 
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("", []),
+        ("480455883655217152", ["480455883655217152"]),
+        ("480455883655217152,1361398846822813946", ["480455883655217152", "1361398846822813946"]),
+        (" 1 , 2 ,, 3 ", ["1", "2", "3"]),
+    ],
+)
+def test_id_lists_are_parsed_from_env(monkeypatch, raw: str, expected: list[str]) -> None:
+    """Через окружение, а не аргументом: pydantic-settings разбирает списки иначе.
+
+    Без NoDecode он пробует json.loads и падает на всём, кроме одного числа, —
+    в том числе на пустой строке, которая стоит в .env.example.
+    """
+    monkeypatch.setenv("DISCORD_ADMIN_IDS", raw)
+    monkeypatch.setenv("DISCORD_REQUIRED_ROLE_IDS", raw)
+
+    settings = Settings(secret_key="x")
+
+    assert settings.discord_admin_ids == expected
+    assert settings.discord_required_role_ids == expected
+
+
 def test_base_url_loses_trailing_slash() -> None:
     settings = Settings(secret_key="x", base_url="https://example.com/")
     assert settings.base_url == "https://example.com"
