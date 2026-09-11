@@ -1,0 +1,101 @@
+name: Деплой на сервер
+
+# Пуш в main -> CI -> «Публикация образа» -> этот workflow забирает
+# опубликованный образ на сервер. Сервер ничего не собирает: он тянет из GHCR
+# ровно тот образ, который прошёл проверки.
+
+on:
+  workflow_run:
+    workflows: ["Публикация образа"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Тег образа в GHCR: latest или sha-1a2b3c4 (для отката)"
+        required: false
+        default: latest
+
+# два деплоя одновременно затопчут друг друга; очередь не отменяем,
+# иначе можно потерять выкатку последнего коммита
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Выкатка
+    # workflow_run срабатывает и на провалившуюся публикацию — фильтруем
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://anime.z3r0ing.ru
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Определяем тег образа
+        id: tag
+        env:
+          # через env, а не напрямую в скрипт: значения снаружи нельзя
+          # подставлять в shell шаблонизатором
+          INPUT_TAG: ${{ inputs.tag }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="${INPUT_TAG:-latest}"
+          else
+            # docker/metadata-action помечает образ как sha-<7 символов>
+            TAG="sha-$(printf '%s' "$HEAD_SHA" | cut -c1-7)"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Разворачиваем тег: $TAG"
+
+      - name: Готовим SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Выкатываем на сервер
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          PORT: ${{ secrets.DEPLOY_PORT }}
+          USER_NAME: ${{ secrets.DEPLOY_USER }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          # одноразовый токен задания: сервер логинится им в GHCR,
+          # поэтому долгоживущий PAT не нужен
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # ключ на сервере заперт в authorized_keys на command="…/deploy.sh",
+          # поэтому строка ниже — не команда, а аргумент для него (тег образа)
+          printf '%s' "$GHCR_TOKEN" | ssh \
+            -i ~/.ssh/id_ed25519 \
+            -p "$PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            "$USER_NAME@$HOST" "$TAG"
+
+      - name: Проверяем сайт снаружи
+        run: |
+          for i in $(seq 1 12); do
+            code="$(curl -fsS -o /tmp/health -w '%{http_code}' \
+                     https://anime.z3r0ing.ru/healthz || true)"
+            if [ "$code" = "200" ]; then
+              echo "Сайт отвечает:"; cat /tmp/health; echo
+              exit 0
+            fi
+            echo "попытка $i: код $code"
+            sleep 5
+          done
+          echo "::error::Сайт не отдаёт 200 на /healthz после деплоя"
+          exit 1
