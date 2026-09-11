@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends, Request, WebSocket
+from fastapi import Depends, HTTPException, Request, WebSocket, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.discord import DiscordClient
@@ -12,7 +12,9 @@ from app.auth.session import SESSION_KEY, SessionUser
 from app.config import Settings, get_settings
 from app.db.session import get_db
 from app.services.catalog import Catalog
+from app.services.notifications import NotificationService
 from app.services.playback import PlaybackService
+from app.services.profiles import ProfileService
 from app.services.rooms import RoomManager
 from app.services.streaming import StreamProxy
 from app.services.tracking import TrackingService
@@ -67,6 +69,14 @@ def get_tracking(request: Request) -> TrackingService:
     return request.app.state.tracking
 
 
+def get_profiles(request: Request) -> ProfileService:
+    return request.app.state.profiles
+
+
+def get_notifications(request: Request) -> NotificationService:
+    return request.app.state.notifications
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 UserDep = Annotated[SessionUser, Depends(require_user)]
@@ -77,3 +87,15 @@ RoomsDep = Annotated[RoomManager, Depends(get_rooms)]
 StreamDep = Annotated[StreamProxy, Depends(get_stream_proxy)]
 PlaybackDep = Annotated[PlaybackService, Depends(get_playback)]
 TrackingDep = Annotated[TrackingService, Depends(get_tracking)]
+ProfilesDep = Annotated[ProfileService, Depends(get_profiles)]
+NotificationsDep = Annotated[NotificationService, Depends(get_notifications)]
+
+
+def require_admin(user: UserDep) -> SessionUser:
+    """Страницы и ручки, доступные только администраторам сайта."""
+    if not user.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Нужны права администратора.")
+    return user
+
+
+AdminDep = Annotated[SessionUser, Depends(require_admin)]

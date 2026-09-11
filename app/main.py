@@ -21,14 +21,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.api import anime, rooms, stream, tracking, ws
+from app.api import anime, notifications, rooms, stream, tracking, users, ws
 from app.auth.discord import DiscordClient
 from app.auth.router import router as auth_router
 from app.config import Settings, get_settings
 from app.db.session import dispose_engine, init_models
 from app.deps import LoginRequired, get_current_user
 from app.services.catalog import Catalog, CatalogError
+from app.services.notifications import NotificationService
 from app.services.playback import PlaybackService
+from app.services.profiles import ProfileService
 from app.services.rooms import RoomError, RoomManager
 from app.services.streaming import StreamProxy
 from app.services.tracking import TrackingService
@@ -56,6 +58,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # для sqlite миграции не обязательны — поднимаем схему на месте
         await init_models()
     await app.state.rooms.start()
+    await app.state.notifications.start()
     log.info(
         "%s запущен: авторизация Discord — %s, источник каталога — %s",
         settings.app_name,
@@ -66,6 +69,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         await app.state.rooms.stop()
+        await app.state.notifications.stop()
         await app.state.discord.aclose()
         await app.state.streams.aclose()
         app.state.catalog.close()
@@ -94,6 +98,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.streams = StreamProxy(settings)
     app.state.rooms = RoomManager(settings)
     app.state.tracking = TrackingService(settings)
+    app.state.profiles = ProfileService(settings)
+    app.state.notifications = NotificationService(settings, app.state.catalog)
     app.state.playback = PlaybackService(settings, app.state.catalog, app.state.streams)
 
     # ---- middleware
@@ -115,6 +121,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app_name=settings.app_name,
         discord_enabled=settings.discord_auth_enabled,
         tracking_enabled=settings.tracking_enabled,
+        profiles_enabled=settings.profiles_enabled,
+        notifications_enabled=settings.notifications_enabled,
     )
     templates.env.filters["duration"] = _format_duration
     views.setup_templates(templates)
@@ -125,6 +133,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(anime.router)
     app.include_router(rooms.router)
     app.include_router(tracking.router)
+    app.include_router(users.router)
+    app.include_router(notifications.router)
     app.include_router(stream.router)
     app.include_router(ws.router)
     app.include_router(views.router)
@@ -139,6 +149,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "viewers": app.state.rooms.total_viewers,
             "discord_auth": settings.discord_auth_enabled,
             "catalog": settings.catalog_source,
+            "notifications": settings.notifications_enabled,
         }
 
     @app.get("/favicon.ico", include_in_schema=False)

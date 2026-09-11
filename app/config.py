@@ -144,6 +144,24 @@ class Settings(BaseSettings):
     progress_report_interval: int = Field(
         default=15, description="Как часто клиент шлёт прогресс просмотра, сек."
     )
+    profiles_enabled: bool = Field(
+        default=True,
+        description="Раздел «Пользователи»: профили участников видны всем, кто вошёл на сайт.",
+    )
+
+    # --------------------------------------------------------- уведомления
+    notifications_enabled: bool = Field(
+        default=False,
+        description="Уведомления о новых сериях через Discord-бота. Требует DISCORD_BOT_TOKEN.",
+    )
+    notify_poll_interval: int = Field(
+        default=1800,
+        description="Как часто бот сверяет список серий у отслеживаемых тайтлов, сек.",
+    )
+    notify_channel_id: str = Field(
+        default="",
+        description="Канал Discord по умолчанию. Пусто — бот пишет каждому в личные сообщения.",
+    )
 
     # -------------------------------------------------------------------- db
     database_url: str = "sqlite+aiosqlite:///./data/anime_watch.db"
@@ -186,6 +204,17 @@ class Settings(BaseSettings):
             raise ValueError("DISCORD_REQUIRED_ROLE_IDS требует DISCORD_GUILD_CHECK=oauth или bot.")
         return self
 
+    @model_validator(mode="after")
+    def _check_notifications(self) -> Settings:
+        if self.notifications_enabled and not self.discord_bot_token:
+            raise ValueError(
+                "NOTIFICATIONS_ENABLED=true, но не задан DISCORD_BOT_TOKEN — "
+                "писать о новых сериях некому. Заполните токен или выключите уведомления."
+            )
+        if self.notifications_enabled and not self.tracking_enabled:
+            raise ValueError("NOTIFICATIONS_ENABLED=true требует TRACKING_ENABLED=true.")
+        return self
+
     @property
     def redirect_uri(self) -> str:
         return self.discord_redirect_uri or f"{self.base_url}/auth/discord/callback"
@@ -198,6 +227,11 @@ class Settings(BaseSettings):
             # guilds.members.read отдаёт и факт членства, и роли одним запросом
             scopes += ["guilds", "guilds.members.read"]
         return scopes
+
+    @property
+    def notify_interval(self) -> float:
+        """Интервал опроса каталога. Реже минуты — чтобы не долбить источник."""
+        return float(max(60, self.notify_poll_interval))
 
     @property
     def proxy_or_none(self) -> str | None:

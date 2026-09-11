@@ -446,6 +446,46 @@ select { cursor: pointer; }
 .footer__inner { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: space-between; padding: 0; }
 .footer p { margin: 0; font-size: .85rem; }
 
+/* ------------------------------------------- профили и уведомления */
+.avatar--lg { width: 48px; height: 48px; font-size: 1.15rem; }
+.avatar--xl { width: 88px; height: 88px; font-size: 2rem; }
+
+.grid--people { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+
+.person-card {
+  display: flex; align-items: center; gap: .85rem; padding: .85rem;
+  transition: transform .15s ease, border-color .15s ease;
+}
+.person-card:hover { transform: translateY(-2px); border-color: var(--accent); color: var(--text); }
+.person-card__body { min-width: 0; }
+.person-card__name {
+  margin: 0 0 .15rem; font-size: 1rem; display: flex; align-items: center; gap: .4rem;
+  flex-wrap: wrap;
+}
+.person-card__body p { margin: 0; }
+
+.profile-head {
+  display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap;
+  padding-bottom: 1rem; border-bottom: 1px solid var(--border);
+}
+.profile-head h1 { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin: 0 0 .3rem; }
+.profile-head p { margin: 0; }
+.profile-head__actions { margin-left: auto; }
+
+.panel {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); padding: 1rem 1.1rem; display: grid; gap: .8rem;
+}
+.panel .section__title { margin: 0; }
+.panel .hint { margin-top: 0; }
+
+.inline-form {
+  display: flex; align-items: flex-end; gap: .6rem; flex-wrap: wrap; margin-bottom: 1rem;
+}
+.inline-form select { min-width: 240px; max-width: 100%; }
+
+.table input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--accent); }
+
 /* ------------------------------------------------------------ адаптивность */
 @media (max-width: 1080px) {
   .room-layout { grid-template-columns: minmax(0, 1fr); }
@@ -465,6 +505,8 @@ select { cursor: pointer; }
   .container { width: min(1180px, 100% - 1.5rem); }
   .page-head { align-items: flex-start; }
   .grid--cards { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); }
+  .profile-head__actions { margin-left: 0; }
+  .inline-form select { min-width: 0; width: 100%; }
   .player-bar__group--right { margin-left: 0; }
 }
 

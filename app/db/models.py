@@ -1,4 +1,4 @@
-"""Модели БД: пользователи, список аниме и прогресс по эпизодам."""
+"""Модели БД: пользователи, список аниме, прогресс по эпизодам и подписки на серии."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    true,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -74,6 +75,12 @@ class User(Base):
     display_name: Mapped[str] = mapped_column(String(64))
     avatar_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    notifications_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=true()
+    )
+    """Получает ли человек уведомления бота о новых сериях."""
+    notify_channel_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    """Куда писать вместо личных сообщений: ID канала Discord. Пусто — в ЛС."""
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     last_seen_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
@@ -83,6 +90,9 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan"
     )
     progress: Mapped[list[EpisodeProgress]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    subscriptions: Mapped[list[NotificationSubscription]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
 
@@ -164,3 +174,37 @@ class EpisodeProgress(Base):
 
     def __repr__(self) -> str:  # pragma: no cover - отладочный помощник
         return f"<EpisodeProgress {self.anime_id} ep{self.episode} {self.position:.0f}s>"
+
+
+class NotificationSubscription(Base):
+    """Подписка на новые серии тайтла: кому и о чём пишет бот.
+
+    ``last_known_episode`` — та серия, о которой человек уже знает. При
+    оформлении подписки туда кладётся текущий максимум, поэтому за прошлые
+    серии уведомлений не приходит: бот пишет только про то, что вышло позже.
+    """
+
+    __tablename__ = "notification_subscriptions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    source: Mapped[str] = mapped_column(String(16), default="animego")
+    anime_id: Mapped[str] = mapped_column(String(128))
+    title: Mapped[str] = mapped_column(String(255))
+    poster_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    last_known_episode: Mapped[int] = mapped_column(Integer, default=0)
+    """0 — базовая линия ещё не снята, первая проверка снимет её молча."""
+    last_notified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    user: Mapped[User] = relationship(back_populates="subscriptions")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "source", "anime_id", name="uq_subscription_user_anime"),
+        Index("ix_subscription_anime", "source", "anime_id"),
+    )
+
+    def __repr__(self) -> str:  # pragma: no cover - отладочный помощник
+        return f"<NotificationSubscription {self.anime_id} ep={self.last_known_episode}>"

@@ -30,3 +30,6 @@ Thumbs.db
 
 # служебное
 task.txt
+
+# локальные доступы: в репозиторий им нельзя
+proxy_socks_auth.txt

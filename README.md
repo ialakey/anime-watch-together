@@ -54,6 +54,20 @@ single setting.
 - A personal list with statuses: watching, planned, completed, on hold, dropped.
 - Ratings 1–10, notes, a "continue watching" row on the home page, hours watched.
 
+**Community**
+- A `Users` directory: everyone who has signed in, with their episode and hour
+  counts.
+- Open anyone's profile to see their list, statuses, ratings and what they have
+  been watching lately. Turn the whole section off with `PROFILES_ENABLED`.
+
+**New-episode notifications**
+- Follow a title and a Discord bot writes you when a new episode is out — in a
+  DM or in a channel.
+- Pick what to follow from a title page or from `Notifications`; an admin can
+  pick the people and the titles for them and toggle delivery per person.
+- No gateway connection and no extra dependency: the bot posts over the REST
+  API with the same `DISCORD_BOT_TOKEN` the guild check uses.
+
 **Authentication**
 - Discord OAuth2 with a guild membership check and, optionally, role checks.
 - Three ways to verify membership: user token, bot token, or no check at all.
@@ -247,6 +261,19 @@ lives in [`.env.example`](.env.example); the essentials are below.
 | `TRACKING_ENABLED` | `true` | Disables the whole "my list" section. |
 | `EPISODE_COMPLETED_RATIO` | `0.85` | Share of an episode after which it counts as watched. |
 | `PROGRESS_REPORT_INTERVAL` | `15` | How often a client reports its position, seconds. |
+| `PROFILES_ENABLED` | `true` | The `Users` section: member profiles and their lists. |
+
+### Notifications
+
+| Variable | Default | Description |
+|---|---|---|
+| `NOTIFICATIONS_ENABLED` | `false` | New-episode notifications through the Discord bot. Requires `DISCORD_BOT_TOKEN` and `TRACKING_ENABLED`. |
+| `NOTIFY_POLL_INTERVAL` | `1800` | How often episode lists are re-checked, seconds. Clamped to 60 at the low end. |
+| `NOTIFY_CHANNEL_ID` | — | Channel to post to for everyone. Empty means a DM per person; each member can also set their own channel on the site. |
+
+For DMs to arrive, the bot has to share a server with the person and that person
+must allow direct messages from server members. If they don't, give them a
+channel ID instead — the bot mentions them there.
 
 ---
 
@@ -381,6 +408,13 @@ Interactive docs: `/api/docs`. Everything except the login page requires a sessi
 | `GET` | `/api/rooms/{code}` | room state |
 | `DELETE` | `/api/rooms/{code}` | close a room (host only) |
 | `GET/PUT/DELETE` | `/api/tracking/*` | list, progress, ratings |
+| `GET` | `/api/users` | member directory |
+| `GET` | `/api/users/{id}` | someone's profile and list |
+| `GET/POST/DELETE` | `/api/notifications/subscriptions` | titles you follow |
+| `PUT` | `/api/notifications/settings` | your delivery settings |
+| `POST` | `/api/notifications/test` | send yourself a test message |
+| `POST` | `/api/notifications/broadcast` | subscribe chosen members to a title (admin) |
+| `POST` | `/api/notifications/check` | check for new episodes right now (admin) |
 | `GET` | `/api/stream/playlist?t=` | HLS playlist through the proxy |
 | `GET` | `/api/stream/segment?t=` | a segment or a whole file |
 | `WS` | `/ws/room/{code}` | room synchronization |
@@ -418,6 +452,11 @@ through an mp4 works.
 
 **Tracking** (`services/tracking.py`) creates the list entry on first watch and
 moves the episode counter once an episode is finished.
+
+**Notifications** (`services/notifications.py`) remember, per subscription, the
+last episode the person already knows about — set when they subscribe, so no
+backlog is ever sent. A background task asks the catalogue for each followed
+title's episode list, and anything above that number goes out through the bot.
 
 ---
 

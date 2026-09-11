@@ -31,6 +31,7 @@
         <nav class="nav" aria-label="Основная навигация">
           <a href="/" class="nav__link">Комнаты</a>
           {% if tracking_enabled %}<a href="/library" class="nav__link">Мой список</a>{% endif %}
+          {% if profiles_enabled %}<a href="/users" class="nav__link">Пользователи</a>{% endif %}
         </nav>
 
         <details class="usermenu">
@@ -48,6 +49,11 @@
               {% if user.is_admin %}· админ{% endif %}
             </p>
             {% if tracking_enabled %}<a href="/library">Мой список</a>{% endif %}
+            {% if profiles_enabled %}
+              <a href="/users">Пользователи</a>
+              <a href="/users/{{ user.id }}">Мой профиль</a>
+            {% endif %}
+            {% if notifications_enabled %}<a href="/notifications">Уведомления</a>{% endif %}
             <form action="/auth/logout" method="post">
               <button type="submit" class="linklike">Выйти</button>
             </form>
