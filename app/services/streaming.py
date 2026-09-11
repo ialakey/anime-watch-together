@@ -81,6 +81,9 @@ class StreamProxy:
             timeout=httpx.Timeout(20.0, read=60.0),
             follow_redirects=True,
             limits=httpx.Limits(max_connections=100, max_keepalive_connections=30),
+            # тем же прокси, что и каталог: CDN привязывает ссылку к IP, который
+            # её получил, — забирать поток с другого адреса нельзя
+            proxy=settings.proxy_or_none,
         )
         self._own_client = client is None
 

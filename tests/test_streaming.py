@@ -124,3 +124,22 @@ def test_token_carries_an_expiry(proxy: StreamProxy) -> None:
     body = proxy.sign("https://cdn/x.ts", {}, is_playlist=False).split(".", 1)[0]
     payload = json.loads(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)))
     assert payload["e"] > time.time()
+
+
+def test_upstream_client_uses_proxy() -> None:
+    """Поток должен идти тем же прокси, что и каталог.
+
+    CDN привязывает выданную ссылку к IP, который её запросил: если каталог
+    ходит через прокси, а за видео сервер идёт напрямую, CDN ответит отказом.
+    Схема здесь http, а не socks, только чтобы тест не тянул socksio —
+    проверяем сам факт, что настройка доезжает до клиента.
+    """
+    stream = StreamProxy(Settings(secret_key="secret-one", http_proxy="http://127.0.0.1:8888"))
+    # _mounts — единственный способ увидеть прокси у собранного httpx-клиента
+    assert stream._client._mounts, "httpx-клиент создан без прокси"
+
+
+def test_upstream_client_without_proxy_is_direct() -> None:
+    """Без HTTP_PROXY клиент остаётся прямым — прокси не навязывается."""
+    stream = StreamProxy(Settings(secret_key="secret-one"))
+    assert not stream._client._mounts
