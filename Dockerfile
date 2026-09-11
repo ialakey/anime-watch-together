@@ -17,7 +17,7 @@ COPY pyproject.toml README.md ./
 COPY app/__init__.py app/__init__.py
 
 RUN pip install --upgrade pip \
- && pip install ".[postgres]"
+ && pip install ".[postgres,socks]"
 
 # ─── рабочий образ ───────────────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime
