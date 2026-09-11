@@ -16,7 +16,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
-    text,
+    true,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -76,7 +76,7 @@ class User(Base):
     avatar_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     notifications_enabled: Mapped[bool] = mapped_column(
-        Boolean, default=True, server_default=text("1")
+        Boolean, default=True, server_default=true()
     )
     """Получает ли человек уведомления бота о новых сериях."""
     notify_channel_id: Mapped[str | None] = mapped_column(String(32), nullable=True)

@@ -20,12 +20,14 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     with op.batch_alter_table("users", schema=None) as batch_op:
+        # sa.true(), а не text("1"): postgres не принимает целое как default
+        # для boolean, а sqlite — наоборот, не знает литерала true
         batch_op.add_column(
             sa.Column(
                 "notifications_enabled",
                 sa.Boolean(),
                 nullable=False,
-                server_default=sa.text("1"),
+                server_default=sa.true(),
             )
         )
         batch_op.add_column(sa.Column("notify_channel_id", sa.String(length=32), nullable=True))
