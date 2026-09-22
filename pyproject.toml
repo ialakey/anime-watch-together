@@ -50,6 +50,7 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.36",
     "alembic>=1.14",
     "aiosqlite>=0.20",
+    "asyncpg>=0.30",
     "anime-dl-core[async]>=0.5.0",
 ]
 
